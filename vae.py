@@ -110,10 +110,16 @@ trainloss=0
 testloss=0
 itertrain=0
 itertest=0
-totaltrainlosstracker=np.zeros(200)
-totaltestlosstracker=np.zeros(200)
-for epoch in range(200):
+totaltrainlosstracker=np.zeros(50)
+totaltestlosstracker=np.zeros(50)
+for epoch in range(50):
     print("Epoch number " + str(epoch))
+    count=0
+    trainloss=0
+    testloss=0
+    itertrain=0
+    itertest=0
+    runningnum=0
     for line in lines:
             runningnum+=1
             count+=1
@@ -235,10 +241,10 @@ for epoch in range(200):
                 input_descriptors=np.zeros((batch_size,22),dtype='float64')
                 testloss+=myloss
                 itertest+=1
-    print("Train loss for epoch number "+epoch)
+    print("Train loss for epoch number "+str(epoch))
     print(trainloss/itertrain)
     totaltrainlosstracker[epoch]=trainloss/itertrain
-    print("Test loss for epoch number" +epoch)
+    print("Test loss for epoch number " + str(epoch))
     print(testloss/itertrain)
     totaltestlosstracker[epoch]=testloss/itertrain
 print(totaltrainlosstracker)
