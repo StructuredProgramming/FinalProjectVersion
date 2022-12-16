@@ -1,5 +1,5 @@
-import math
 from __future__ import print_function
+import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ import numpy as np
 import pywt
 import matplotlib.pyplot as plt
 from PIL import Image as PImage
-device="cuda"
+device="cpu"
 def weights_init(m):
     if isinstance(m, nn.Linear):
       torch.nn.init.kaiming_uniform_(m.weight)
@@ -93,45 +93,32 @@ class VAE(nn.Module):
         return self.decoder(z), mu, logvar
 class NeuralNetwork(nn.Module):
     def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        self.layer_1 = nn.Linear(20, 1200)
-        nn.init.kaiming_uniform_(self.layer_1.weight)
-        self.layer_2 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_2.weight)
-        self.layer_3 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_3.weight)
-        self.layer_4 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_4.weight)
-        self.layer_5 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_5.weight)
-        self.layer_6 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_6.weight)
-        self.layer_7 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_7.weight)
-        self.layer_8 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_8.weight)
-        self.layer_9 = nn.Linear(1200, 1200)
-        nn.init.kaiming_uniform_(self.layer_9.weight)
-        self.layer_10 = nn.Linear(1200, 6)
-        nn.init.kaiming_uniform_(self.layer_10.weight)
-
-        self.relu = nn.ReLU()
-        self.tanh = nn.Tanh()
-
-    def forward(self, x):
-
-        x = self.relu(self.layer_1(x))
-        x = self.relu(self.layer_2(x))
-        x = self.relu(self.layer_3(x))
-        x = self.relu(self.layer_4(x))
-        x = self.relu(self.layer_5(x))
-        x = self.relu(self.layer_6(x))
-        x = self.relu(self.layer_7(x))
-        x = self.relu(self.layer_8(x))
-        x = self.relu(self.layer_9(x))
-        x = self.tanh(self.layer_10(x))
-
-        return x
+        super(NeuralNetwork,self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(20,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.ReLU(),
+            nn.Linear(1536,1536),
+            nn.Tanh(),
+            nn.Linear(1536,6)
+            )            
+    def forward(self,x):
+        output=self.linear_relu_stack(x)
+        return output
+        
 def coords(m):
     for i in range(2, len(m) - 3):
         if m[i] == ',':
@@ -141,10 +128,10 @@ testloss=0
 vae = VAE(z_dim=20).double().to(device)
 myfinaltrainloss=[]
 myfinaltestloss=[]
-vae.load_state_dict(torch.load("AbhayBhaskarFourierVAEWeights", map_location=torch.device('cpu')))
+vae.load_state_dict(torch.load("AbhayFourierDescriptorsVAEWeights.torch", map_location=torch.device('cpu')))
 loss_function2=nn.MSELoss()
 model=NeuralNetwork().double().to(device)   
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 batch_size=128
 with open('x_y.txt', 'r') as f: 
     lines = f.readlines()
@@ -261,15 +248,17 @@ for epoch in range (200):
             S[i] += (complex(a,b)) * np.exp(tmp)
         S[i]=S[i]/360
         input_list=[float(np.real(S[355])),float(np.real(S[356])),float(np.real(S[357])),float(np.real(S[358])), float(np.real(S[359])), float(np.real(S[0])), float(np.real(S[1])),float(np.real(S[2])),float(np.real(S[3])),float(np.real(S[4])),float(np.real(S[5])), float(np.imag(S[355])),float(np.imag(S[356])),float(np.imag(S[357])), float(np.imag(S[358])), float(np.imag(S[359])), float(np.imag(S[0])), float(np.imag(S[1])), float(np.imag(S[2])), float(np.imag(S[3])),float(np.imag(S[4])),float(np.imag(S[5]))]
-        input_tensor=torch.tensor(input_list)
-        latent_vector=vae.encode(input_tensor)
-        myvector2=torch.tensor(latent_vector[0])
-        prediction=model(myvector2)     
+        input_tensor=torch.tensor(input_list).double().to(device)
+        latent_vector=vae.encoder(input_tensor)
+        prediction=model(latent_vector[0])
+        #print(latent_vector[0])
+        #print(prediction)
         output_list=[float(x2),float(x4),float(x5),float(y2),float(y4),float(y5)]
-        output_tensor=torch.tensor(output_list)
+        output_tensor=torch.tensor(output_list).double().to(device)
         loss_function=nn.MSELoss()
         loss=loss_function(prediction,output_tensor)
-        if(count==batch_size and runningnum<39168):
+        runningnum+=1
+        if(runningnum<39168):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -278,7 +267,9 @@ for epoch in range (200):
             trainloss+=loss
             myloss=loss.item()
             print(myloss)
-        elif(count==batch_size and runningnum>=39168):
+            #print(prediction)
+            #print(output_tensor)
+        elif(runningnum>=39168):
             count=0
             testloss+=loss
             itertest+=1
@@ -286,4 +277,3 @@ for epoch in range (200):
     myfinaltestloss.append(testloss/itertrain)
 print(myfinaltrainloss)
 print(myfinaltestloss)
-            
