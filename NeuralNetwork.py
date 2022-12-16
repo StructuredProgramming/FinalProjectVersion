@@ -19,6 +19,7 @@ import os
 import ast
 import numpy as np
 import pywt
+import random
 import matplotlib.pyplot as plt
 from PIL import Image as PImage
 device="cpu"
@@ -143,6 +144,7 @@ for epoch in range (200):
     itertrain=0
     itertest=0
     runningnum=0
+    random.shuffle(lines)
     for line in lines:
         count+=1
         x, y = line.split('=')[0], line.split('=')[1]
