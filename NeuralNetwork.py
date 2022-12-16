@@ -1,3 +1,4 @@
+import math
 from __future__ import print_function
 import os
 import numpy as np
@@ -179,6 +180,8 @@ for epoch in range (200):
 
         x = [float(i) for i in x if i]
         y = [float(i) for i in y if i]
+        if(math.isnan(x[30])):
+                continue
         S=np.zeros(360, dtype='complex_')
         i=0
         for k in range(360):
